@@ -1,0 +1,37 @@
+.list-page__body {
+  padding-top: 16px;
+}
+
+.list-page__filters {
+  margin-bottom: 20px;
+}
+
+.detail-page__header-title {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.detail-page__body {
+  padding-bottom: 80px;
+}
+
+.auth-page__header {
+  width: min(100%, 560px);
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mypage-page__body,
+.recommend-page__body {
+  padding-top: 32px;
+}
+
+.recommend-page__section {
+  margin-top: 28px;
+}
