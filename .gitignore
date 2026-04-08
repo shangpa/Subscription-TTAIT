@@ -21,3 +21,4 @@ Desktop.ini
 # JVM crash logs
 **/hs_err_pid*
 **/replay_pid*
+demo/demo/src/main/resources/application.properties
