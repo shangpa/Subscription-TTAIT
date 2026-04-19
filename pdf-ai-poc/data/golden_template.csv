@@ -1,0 +1,6 @@
+docId,field,expectedValue,page
+sample_001,applicationPeriod,,1
+sample_001,supplyHouseholdCount,,2
+sample_001,depositMonthlyRent,,3
+sample_001,incomeAssetCriteria,,4
+sample_001,contact,,5
