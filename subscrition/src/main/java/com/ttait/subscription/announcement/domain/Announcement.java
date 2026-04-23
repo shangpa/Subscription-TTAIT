@@ -211,4 +211,13 @@ public class Announcement extends SoftDeleteBaseEntity {
     public void markActive() {
         this.merged = false;
     }
+
+    public void updateSupplyHouseholdCount(Integer count) {
+        this.supplyHouseholdCount = count;
+    }
+
+    public void updateDepositAndRent(Long depositAmountManwon, Long monthlyRentAmountManwon) {
+        if (depositAmountManwon != null) this.depositAmount = depositAmountManwon;
+        if (monthlyRentAmountManwon != null) this.monthlyRentAmount = monthlyRentAmountManwon;
+    }
 }
