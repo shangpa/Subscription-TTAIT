@@ -3,6 +3,8 @@ package com.ttait.subscription.announcement.domain;
 import com.ttait.subscription.common.entity.SoftDeleteBaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -82,6 +84,28 @@ public class AnnouncementDetail extends SoftDeleteBaseEntity {
     @Column(name = "contact_guide_text", columnDefinition = "TEXT")
     private String contactGuideText;
 
+    @Column(name = "supply_household_count_raw", columnDefinition = "TEXT")
+    private String supplyHouseholdCountRaw;
+
+    @Column(name = "supply_household_count_basis", columnDefinition = "TEXT")
+    private String supplyHouseholdCountBasis;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "supply_household_count_confidence", length = 10)
+    private ConfidenceLevel supplyHouseholdCountConfidence;
+
+    @Column(name = "deposit_monthly_rent_raw", columnDefinition = "TEXT")
+    private String depositMonthlyRentRaw;
+
+    @Column(name = "income_asset_criteria_raw", columnDefinition = "TEXT")
+    private String incomeAssetCriteriaRaw;
+
+    @Column(name = "contact_raw", columnDefinition = "TEXT")
+    private String contactRaw;
+
+    @Column(name = "eligibility_raw", columnDefinition = "TEXT")
+    private String eligibilityRaw;
+
     @Builder
     public AnnouncementDetail(Announcement announcement, String applicationDatetimeText,
                               LocalDate documentSubmitStartDate, LocalDate documentSubmitEndDate,
@@ -133,5 +157,21 @@ public class AnnouncementDetail extends SoftDeleteBaseEntity {
         this.contactPhone = contactPhone;
         this.contactAddress = contactAddress;
         this.contactGuideText = contactGuideText;
+    }
+
+    public void updateEligibilityRaw(String eligibilityRaw) {
+        if (eligibilityRaw != null) this.eligibilityRaw = eligibilityRaw;
+    }
+
+    public void updatePdfParseResult(String supplyHouseholdCountRaw, String supplyHouseholdCountBasis,
+                                     ConfidenceLevel supplyHouseholdCountConfidence, String depositMonthlyRentRaw,
+                                     String incomeAssetCriteriaRaw, String contactRaw, String eligibilityRaw) {
+        if (supplyHouseholdCountRaw != null) this.supplyHouseholdCountRaw = supplyHouseholdCountRaw;
+        if (supplyHouseholdCountBasis != null) this.supplyHouseholdCountBasis = supplyHouseholdCountBasis;
+        if (supplyHouseholdCountConfidence != null) this.supplyHouseholdCountConfidence = supplyHouseholdCountConfidence;
+        if (depositMonthlyRentRaw != null) this.depositMonthlyRentRaw = depositMonthlyRentRaw;
+        if (incomeAssetCriteriaRaw != null) this.incomeAssetCriteriaRaw = incomeAssetCriteriaRaw;
+        if (contactRaw != null) this.contactRaw = contactRaw;
+        if (eligibilityRaw != null) this.eligibilityRaw = eligibilityRaw;
     }
 }

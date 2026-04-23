@@ -1,6 +1,7 @@
 package com.ttait.subscription.user.domain;
 
 import com.ttait.subscription.common.entity.SoftDeleteBaseEntity;
+import com.ttait.subscription.user.domain.enums.Role;
 import com.ttait.subscription.user.domain.enums.UserStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,12 +42,17 @@ public class User extends SoftDeleteBaseEntity {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "VARCHAR(10) NOT NULL DEFAULT 'USER'")
+    private Role role;
+
     @Builder
-    public User(String loginId, String passwordHash, String phone, String email, UserStatus status) {
+    public User(String loginId, String passwordHash, String phone, String email, UserStatus status, Role role) {
         this.loginId = loginId;
         this.passwordHash = passwordHash;
         this.phone = phone;
         this.email = email;
         this.status = status;
+        this.role = role != null ? role : Role.USER;
     }
 }
