@@ -24,27 +24,30 @@ public class User extends SoftDeleteBaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // PK (자동 증가)
+    private Long id;
 
     @Column(name = "login_id", nullable = false, unique = true, length = 50)
-    private String loginId; // 로그인 ID (중복 불가)
+    private String loginId;
 
     @Column(name = "password_hash", nullable = false)
-    private String passwordHash; // 비밀번호 해시 (bcrypt)
+    private String passwordHash;
 
     @Column(nullable = false, length = 30)
-    private String phone; // 휴대폰 번호
+    private String phone;
 
     @Column(nullable = false, unique = true, length = 100)
-    private String email; // 이메일 (중복 불가)
+    private String email;
+
+    @Column(name = "profile_completed", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private boolean profileCompleted;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private UserStatus status; // 계정 상태 (활성/비활성)
+    private UserStatus status;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10, columnDefinition = "VARCHAR(10) NOT NULL DEFAULT 'USER'")
-    private Role role; // 권한 (USER/ADMIN)
+    private Role role;
 
     @Builder
     public User(String loginId, String passwordHash, String phone, String email, UserStatus status, Role role) {
@@ -52,7 +55,12 @@ public class User extends SoftDeleteBaseEntity {
         this.passwordHash = passwordHash;
         this.phone = phone;
         this.email = email;
+        this.profileCompleted = false;
         this.status = status;
         this.role = role != null ? role : Role.USER;
+    }
+
+    public void markProfileCompleted() {
+        this.profileCompleted = true;
     }
 }
