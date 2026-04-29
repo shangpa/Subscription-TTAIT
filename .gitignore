@@ -26,3 +26,6 @@ demo/demo 백업.zip
 CLAUDE.md
 .claude/settings.local.json
 .omc
+.omx/
+**/.omx/
+**/.omc/
