@@ -29,3 +29,7 @@ CLAUDE.md
 .omx/
 **/.omx/
 **/.omc/
+
+# Local runtime logs
+subscrition/backend.err.log
+subscrition/backend.out.log
