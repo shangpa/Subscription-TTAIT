@@ -44,10 +44,18 @@ public class UserProfileService {
                         .user(user)
                         .age(request.age())
                         .maritalStatus(request.maritalStatus())
+                        .marriageYears(request.marriageYears())
                         .childrenCount(request.childrenCount())
+                        .householdSize(request.householdSize())
                         .homeless(request.isHomeless())
                         .lowIncome(request.isLowIncome())
                         .elderly(request.isElderly())
+                        .recipient(request.isRecipient())
+                        .nearPoverty(request.isNearPoverty())
+                        .singleParentFamily(request.isSingleParentFamily())
+                        .monthlyAverageIncome(request.monthlyAverageIncome())
+                        .totalAssets(request.totalAssets())
+                        .vehicleAssetAmount(request.vehicleAssetAmount())
                         .preferredRegionLevel1(request.preferredRegionLevel1())
                         .preferredRegionLevel2(request.preferredRegionLevel2())
                         .preferredHouseType(request.preferredHouseType())
@@ -60,10 +68,18 @@ public class UserProfileService {
             profile.update(
                     request.age(),
                     request.maritalStatus(),
+                    request.marriageYears(),
                     request.childrenCount(),
+                    request.householdSize(),
                     request.isHomeless(),
                     request.isLowIncome(),
                     request.isElderly(),
+                    request.isRecipient(),
+                    request.isNearPoverty(),
+                    request.isSingleParentFamily(),
+                    request.monthlyAverageIncome(),
+                    request.totalAssets(),
+                    request.vehicleAssetAmount(),
                     request.preferredRegionLevel1(),
                     request.preferredRegionLevel2(),
                     request.preferredHouseType(),
@@ -79,6 +95,8 @@ public class UserProfileService {
             request.categories().forEach(category ->
                     userCategoryRepository.save(UserCategory.builder().user(user).categoryCode(category).build()));
         }
+
+        user.markProfileCompleted();
         return getMe(userId);
     }
 

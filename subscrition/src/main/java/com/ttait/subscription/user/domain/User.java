@@ -38,6 +38,9 @@ public class User extends SoftDeleteBaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(name = "profile_completed", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private boolean profileCompleted;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserStatus status;
@@ -52,7 +55,12 @@ public class User extends SoftDeleteBaseEntity {
         this.passwordHash = passwordHash;
         this.phone = phone;
         this.email = email;
+        this.profileCompleted = false;
         this.status = status;
         this.role = role != null ? role : Role.USER;
+    }
+
+    public void markProfileCompleted() {
+        this.profileCompleted = true;
     }
 }
