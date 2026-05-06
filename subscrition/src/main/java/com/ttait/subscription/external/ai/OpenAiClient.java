@@ -64,6 +64,9 @@ public class OpenAiClient {
             - specialSupplyRaw: verbatim text of 특별공급/우선공급 conditions. null if not present.
             """;
 
+    // 한국어 텍스트는 토큰당 약 1-2자. gpt-4o-mini 128K 한도에서 시스템 프롬프트 여유분 포함한 안전값.
+    private static final int MAX_TEXT_CHARS = 200_000;
+
     private final RestClient restClient;
     private final OpenAiProperties properties;
     private final ObjectMapper objectMapper;
@@ -75,6 +78,12 @@ public class OpenAiClient {
     }
 
     public PdfParseResult parse(String pdfText) {
+        if (pdfText.length() > MAX_TEXT_CHARS) {
+            log.warn("PDF text truncated for OpenAI context limit: original={}chars, truncated={}chars",
+                    pdfText.length(), MAX_TEXT_CHARS);
+            pdfText = pdfText.substring(0, MAX_TEXT_CHARS);
+        }
+
         try {
             Map<String, Object> body = Map.of(
                     "model", properties.model(),
@@ -97,7 +106,13 @@ public class OpenAiClient {
             return objectMapper.readValue(content, PdfParseResult.class);
 
         } catch (Exception e) {
-            log.error("OpenAI parsing failed", e);
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("context_length_exceeded") || msg.contains("maximum context length")) {
+                log.warn("OpenAI context length exceeded even after truncation: textLength={}chars, skipping parse",
+                        pdfText.length());
+            } else {
+                log.error("OpenAI parsing failed: textLength={}chars", pdfText.length(), e);
+            }
             return null;
         }
     }

@@ -215,7 +215,9 @@ HIGH 신뢰도일 때만 announcement.supply_household_count 업데이트.
 | PDF URL 없음 | PDF 파싱 건너뜀, 공고는 정상 저장 |
 | PDF 다운로드 실패 | 로그 경고, PDF 파싱 건너뜀, 공고는 정상 저장 |
 | 스캔본 PDF (텍스트 200자 미만) | PDF 파싱 건너뜀, 공고는 정상 저장 |
-| OpenAI API 실패 | 로그 에러, raw 필드 null로 저장, 공고는 정상 저장 |
+| PDF 텍스트 200,000자 초과 (128K 토큰 한도) | 앞 200,000자로 잘라서 전송, warn 로그 (`PDF text truncated`), 파싱 계속 시도 |
+| OpenAI API 실패 (컨텍스트 초과) | warn 로그 (`context length exceeded`), raw 필드 null, 공고는 정상 저장 |
+| OpenAI API 실패 (그 외) | error 로그 (텍스트 길이 포함), raw 필드 null, 공고는 정상 저장 |
 | 개별 공고 처리 실패 | 해당 공고만 failed 카운트, 나머지 계속 처리 |
 | LH 목록 API 실패 | 전체 중단, 로그 에러 |
 
