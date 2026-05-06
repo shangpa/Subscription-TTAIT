@@ -50,6 +50,10 @@ public class AdminReviewService {
     // 검수 상태별 공고 목록 페이징 조회 (읽기 전용 트랜잭션으로 성능 최적화)
     @Transactional(readOnly = true)
     public Page<AdminReviewListResponse> listByStatus(ParseReviewStatus status, Pageable pageable) {
+        if (status == null) {
+            return eligibilityRepository.findAllActive(pageable)
+                    .map(AdminReviewListResponse::from);
+        }
         return eligibilityRepository.findByReviewStatus(status, pageable)
                 .map(AdminReviewListResponse::from);
     }

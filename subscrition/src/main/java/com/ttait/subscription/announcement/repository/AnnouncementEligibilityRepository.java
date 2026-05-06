@@ -21,6 +21,9 @@ public interface AnnouncementEligibilityRepository extends JpaRepository<Announc
     @Query("SELECT e FROM AnnouncementEligibility e WHERE e.reviewStatus = :status AND e.announcement.deleted = false")
     Page<AnnouncementEligibility> findByReviewStatus(@Param("status") ParseReviewStatus status, Pageable pageable);
 
+    @Query("SELECT e FROM AnnouncementEligibility e WHERE e.announcement.deleted = false")
+    Page<AnnouncementEligibility> findAllActive(Pageable pageable);
+
     @Query("SELECT COUNT(e) FROM AnnouncementEligibility e WHERE e.reviewStatus = :status AND e.announcement.deleted = false")
     long countByReviewStatus(@Param("status") ParseReviewStatus status);
 
