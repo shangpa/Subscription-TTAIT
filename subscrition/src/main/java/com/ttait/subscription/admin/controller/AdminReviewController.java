@@ -41,7 +41,7 @@ public class AdminReviewController {
     // ?status=PENDING|APPROVED|CORRECTED|REJECTED|RE_IMPORT 로 필터링
     @GetMapping
     public ResponseEntity<Page<AdminReviewListResponse>> list(
-            @RequestParam(defaultValue = "PENDING") ParseReviewStatus status,
+            @RequestParam(required = false) ParseReviewStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(adminReviewService.listByStatus(status, PageRequest.of(page, size)));
