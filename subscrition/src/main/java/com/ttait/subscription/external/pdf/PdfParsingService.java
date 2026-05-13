@@ -1,8 +1,11 @@
 package com.ttait.subscription.external.pdf;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ttait.subscription.external.ai.GeminiClient;
 import com.ttait.subscription.external.ai.GeminiRateLimitException;
 import com.ttait.subscription.external.ai.dto.PdfParseResult;
+import com.ttait.subscription.external.openclaw.OpenClawPdfParserClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,50 +14,105 @@ import org.springframework.stereotype.Service;
 public class PdfParsingService {
 
     private static final Logger log = LoggerFactory.getLogger(PdfParsingService.class);
-    private static final long GEMINI_CALL_DELAY_MS = 6_000; // 10 RPM 안전 마진 (60s / 10 = 6s)
+    private static final long GEMINI_CALL_DELAY_MS = 6_000; // 10 RPM safety margin
 
     private final PdfTextExtractor textExtractor;
     private final GeminiClient geminiClient;
+    private final OpenClawPdfParserClient openClawPdfParserClient;
+    private final ObjectMapper objectMapper;
 
-    public PdfParsingService(PdfTextExtractor textExtractor, GeminiClient geminiClient) {
+    public PdfParsingService(PdfTextExtractor textExtractor,
+                             GeminiClient geminiClient,
+                             OpenClawPdfParserClient openClawPdfParserClient,
+                             ObjectMapper objectMapper) {
         this.textExtractor = textExtractor;
         this.geminiClient = geminiClient;
+        this.openClawPdfParserClient = openClawPdfParserClient;
+        this.objectMapper = objectMapper;
     }
 
     public PdfParseResult parse(String pdfUrl) {
+        return parseWithRaw(pdfUrl).result();
+    }
+
+    public PdfParsingResult parseWithRaw(String pdfUrl) {
         if (pdfUrl == null || pdfUrl.isBlank()) {
-            return null;
+            return PdfParsingResult.empty();
         }
 
-        // 1차: PDF bytes → Gemini PDF 직접 전송 (표 구조 보존)
+        if (openClawPdfParserClient.isEnabled()) {
+            PdfParsingResult openClawResult = parseWithOpenClaw(pdfUrl);
+            if (openClawResult.result() != null) {
+                return openClawResult;
+            }
+            if (!openClawPdfParserClient.isFallbackToGeminiEnabled()) {
+                throw new IllegalStateException("OpenClaw PDF parse failed and Gemini fallback is disabled: " + pdfUrl);
+            }
+        }
+
+        return parseWithGemini(pdfUrl);
+    }
+
+    private PdfParsingResult parseWithOpenClaw(String pdfUrl) {
+        if (!openClawPdfParserClient.isEnabled()) {
+            return PdfParsingResult.empty();
+        }
+
+        try {
+            OpenClawPdfParserClient.OpenClawPdfParseResponse response = openClawPdfParserClient.parse(pdfUrl);
+            if (response.result() != null) {
+                PdfParseResult result = response.result();
+                log.info(
+                        "OpenClaw PDF parse succeeded: url={}, noticeType={}, supply={}, depositAmountManwon={}, monthlyRentAmountManwon={}, scheduleCount={}, eligibilityPresent={}",
+                        pdfUrl,
+                        result.noticeType(),
+                        valueOf(result.supplyHouseholdCount()),
+                        result.depositAmountManwon(),
+                        result.monthlyRentAmountManwon(),
+                        result.scheduleDetails() == null ? 0 : result.scheduleDetails().size(),
+                        result.eligibility() != null
+                );
+                return new PdfParsingResult(response.result(), response.rawJson());
+            }
+        } catch (Exception e) {
+            if (openClawPdfParserClient.isFallbackToGeminiEnabled()) {
+                log.warn("OpenClaw PDF parse failed, falling back to Gemini: url={}, error={}", pdfUrl, e.getMessage());
+            } else {
+                log.warn("OpenClaw PDF parse failed: url={}, error={}", pdfUrl, e.getMessage());
+            }
+        }
+
+        return PdfParsingResult.empty();
+    }
+
+    private PdfParsingResult parseWithGemini(String pdfUrl) {
         byte[] pdfBytes = textExtractor.downloadBytes(pdfUrl);
         if (pdfBytes != null) {
             log.info("Gemini PDF parse: url={}, bytes={}", pdfUrl, pdfBytes.length);
             sleepForRateLimit();
             try {
                 PdfParseResult result = geminiClient.parsePdf(pdfBytes);
-                if (result != null) return result;
+                if (result != null) return new PdfParsingResult(result, safeJson(result));
                 log.warn("Gemini PDF parse failed, falling back to text: {}", pdfUrl);
             } catch (GeminiRateLimitException e) {
-                // RPD 소진 방지: 429로 인한 실패는 텍스트 fallback 없이 종료
                 log.warn("Gemini PDF 429 rate limit exhausted, skipping text fallback to preserve RPD: {}", pdfUrl);
-                return null;
+                return PdfParsingResult.empty();
             }
         }
 
-        // 2차 fallback: PDF 파싱 불가(표 구조 문제 등) 시에만 텍스트로 재시도
         String text = textExtractor.extract(pdfUrl);
         if (text == null) {
             log.warn("No extractable text from PDF: {}", pdfUrl);
-            return null;
+            return PdfParsingResult.empty();
         }
         log.info("Gemini text parse: url={}, textLength={}", pdfUrl, text.length());
         sleepForRateLimit();
         try {
-            return geminiClient.parseText(text);
+            PdfParseResult result = geminiClient.parseText(text);
+            return result == null ? PdfParsingResult.empty() : new PdfParsingResult(result, safeJson(result));
         } catch (GeminiRateLimitException e) {
             log.warn("Gemini text 429 rate limit exhausted: {}", pdfUrl);
-            return null;
+            return PdfParsingResult.empty();
         }
     }
 
@@ -63,6 +121,28 @@ public class PdfParsingService {
             Thread.sleep(GEMINI_CALL_DELAY_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private String safeJson(PdfParseResult result) {
+        try {
+            return objectMapper.writeValueAsString(result);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize PDF parse result", e);
+            return null;
+        }
+    }
+
+    private String valueOf(PdfParseResult.Field field) {
+        return field == null ? null : field.value();
+    }
+
+    public record PdfParsingResult(
+            PdfParseResult result,
+            String rawJson
+    ) {
+        public static PdfParsingResult empty() {
+            return new PdfParsingResult(null, null);
         }
     }
 }

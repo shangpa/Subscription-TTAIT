@@ -103,10 +103,9 @@ public class NoticeImportOrchestrator {
 
         if (pdfUrl != null) {
             log.info("PDF found for panId={}: {}", panId, pdfUrl);
-            pdfResult = pdfParsingService.parse(pdfUrl);
-            if (pdfResult != null) {
-                pdfRawJson = safeJson(pdfResult);
-            }
+            PdfParsingService.PdfParsingResult parsingResult = pdfParsingService.parseWithRaw(pdfUrl);
+            pdfResult = parsingResult.result();
+            pdfRawJson = parsingResult.rawJson();
         }
 
         persistenceService.upsertLhDetail(panId, detailResponse, pdfResult, pdfRawJson);
@@ -164,10 +163,9 @@ public class NoticeImportOrchestrator {
 
         if (pdfUrl != null) {
             log.info("Reimport PDF for announcementId={}: {}", announcementId, pdfUrl);
-            pdfResult = pdfParsingService.parse(pdfUrl);
-            if (pdfResult != null) {
-                pdfRawJson = safeJson(pdfResult);
-            }
+            PdfParsingService.PdfParsingResult parsingResult = pdfParsingService.parseWithRaw(pdfUrl);
+            pdfResult = parsingResult.result();
+            pdfRawJson = parsingResult.rawJson();
         }
 
         persistenceService.upsertLhDetail(panId, detailResponse, pdfResult, pdfRawJson);

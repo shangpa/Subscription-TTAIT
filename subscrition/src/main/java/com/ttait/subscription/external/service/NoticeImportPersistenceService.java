@@ -23,6 +23,7 @@ import com.ttait.subscription.external.support.CategoryDetector;
 import com.ttait.subscription.external.support.DateParsers;
 import com.ttait.subscription.external.support.SupplyCountParser;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -143,6 +144,7 @@ public class NoticeImportPersistenceService {
                     String addr = text(site, "LGDN_ADR");
                     String lccNm = text(site, "LCC_NT_NM");
                     String complexNm = lccNm != null ? lccNm : text(site, "SBD_NM"); // 상가는 SBD_NM 사용
+                    Integer siteHouseholdCount = intValue(site, "HSH_CNT");
                     if (addr == null && "전국".equals(announcement.getRegionLevel1())) {
                         addr = "전국공고(직접확인필요)";
                     }
@@ -158,7 +160,7 @@ public class NoticeImportPersistenceService {
                             text(site, "LCC_NT_NM"),
                             text(site, "LGDN_ADR"),
                             text(site, "LGDN_DTL_ADR"),
-                            intValue(site, "HSH_CNT"),
+                            siteHouseholdCount,
                             text(site, "HTN_FMLA_DESC"),
                             text(site, "DDO_AR"),
                             parseSingleArea(text(site, "DDO_AR")),
@@ -195,9 +197,16 @@ public class NoticeImportPersistenceService {
                         // supply_household_count 업데이트 (HIGH 신뢰도일 때만)
                         if (supplyParsed.count() != null && supplyParsed.confidence() == ConfidenceLevel.HIGH) {
                             announcement.updateSupplyHouseholdCount(supplyParsed.count());
+                        } else if (announcement.getSupplyHouseholdCount() == null && siteHouseholdCount != null) {
+                            log.info("PDF supply count missing/low confidence, using LH API HSH_CNT fallback: panId={}, hshCnt={}",
+                                    panId, siteHouseholdCount);
+                            announcement.updateSupplyHouseholdCount(siteHouseholdCount);
                         }
                         // deposit / monthly_rent 업데이트
-                        announcement.updateDepositAndRent(pdfResult.depositAmountManwon(), pdfResult.monthlyRentAmountManwon());
+                        announcement.updateDepositAndRent(
+                                toLongManwon(pdfResult.depositAmountManwon(), "depositAmountManwon", panId),
+                                toLongManwon(pdfResult.monthlyRentAmountManwon(), "monthlyRentAmountManwon", panId)
+                        );
                         // house_type_raw: LH API에 없으므로 PDF 파싱 결과로 채움
                         if (pdfResult.houseType() != null) announcement.updateHouseType(pdfResult.houseType());
                         // address 보완: API dsSbd에서 못 채운 경우(상가/집주인임대) PDF 주소로 보완
@@ -345,6 +354,18 @@ public class NoticeImportPersistenceService {
         } catch (JsonProcessingException e) {
             return null;
         }
+    }
+
+    private Long toLongManwon(BigDecimal value, String fieldName, String panId) {
+        if (value == null) return null;
+        BigDecimal normalized = value;
+        if (normalized.compareTo(BigDecimal.valueOf(100_000)) > 0) {
+            BigDecimal corrected = normalized.divide(BigDecimal.valueOf(1_000), 2, RoundingMode.HALF_UP);
+            log.warn("PDF amount looks too large, normalizing by /1000: panId={}, field={}, original={}, corrected={}",
+                    panId, fieldName, normalized, corrected);
+            normalized = corrected;
+        }
+        return normalized.setScale(0, RoundingMode.HALF_UP).longValue();
     }
 
     private void reconcileMergeGroup(Announcement saved) {

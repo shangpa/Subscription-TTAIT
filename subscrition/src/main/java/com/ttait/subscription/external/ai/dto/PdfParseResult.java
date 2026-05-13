@@ -1,6 +1,7 @@
 package com.ttait.subscription.external.ai.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.math.BigDecimal;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -11,10 +12,10 @@ public record PdfParseResult(
         Field depositMonthlyRent,            // 보증금/월세 (임대 전용)
         Field incomeAssetCriteria,           // 소득/자산 기준
         Field contact,                       // 문의처
-        Long depositAmountManwon,            // 보증금 (단위: 만원, 임대 전용)
-        Long monthlyRentAmountManwon,        // 월세 (단위: 만원, 임대 전용)
-        Long salePriceMinManwon,             // 최소 분양가 (단위: 만원, 분양 전용)
-        Long salePriceMaxManwon,             // 최대 분양가 (단위: 만원, 분양 전용)
+        BigDecimal depositAmountManwon,      // 보증금 (단위: 만원, 임대 전용)
+        BigDecimal monthlyRentAmountManwon,  // 월세 (단위: 만원, 임대 전용)
+        BigDecimal salePriceMinManwon,       // 최소 분양가 (단위: 만원, 분양 전용)
+        BigDecimal salePriceMaxManwon,       // 최대 분양가 (단위: 만원, 분양 전용)
         Field salePriceRaw,                  // 분양가 원문
         List<ScheduleItem> scheduleDetails,  // 복수 일정 배열
         Field importantNotes,                // 유의사항 원문
