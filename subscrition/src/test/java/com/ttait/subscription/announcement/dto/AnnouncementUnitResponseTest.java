@@ -8,6 +8,7 @@ import com.ttait.subscription.announcement.domain.AnnouncementUnitSource;
 import com.ttait.subscription.announcement.domain.ConfidenceLevel;
 import com.ttait.subscription.announcement.domain.MatchSource;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -27,9 +28,13 @@ class AnnouncementUnitResponseTest {
         assertThat(response.exclusiveAreaValue()).isEqualByComparingTo(new BigDecimal("59.84"));
         assertThat(response.depositAmount()).isEqualTo(5000L);
         assertThat(response.monthlyRentAmount()).isEqualTo(25L);
-        assertThat(response.salePriceRaw()).isEqualTo("분양가 원문");
-        assertThat(response.unitSource()).isEqualTo("MERGED");
-        assertThat(response.confidenceLevel()).isEqualTo("HIGH");
+        assertThat(recordComponentNames()).doesNotContain(
+                "rawText",
+                "sourceUnitKey",
+                "salePriceRaw",
+                "matchSource",
+                "unitSource",
+                "confidenceLevel");
     }
 
     @Test
@@ -73,5 +78,11 @@ class AnnouncementUnitResponseTest {
                 .build();
         ReflectionTestUtils.setField(unit, "id", 10L);
         return unit;
+    }
+
+    private String[] recordComponentNames() {
+        return Arrays.stream(AnnouncementUnitResponse.class.getRecordComponents())
+                .map(component -> component.getName())
+                .toArray(String[]::new);
     }
 }

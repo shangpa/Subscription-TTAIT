@@ -18,10 +18,7 @@ public record AnnouncementUnitResponse(
         Long monthlyRentAmount,
         Long salePriceMin,
         Long salePriceMax,
-        String salePriceRaw,
-        Integer supplyHouseholdCount,
-        String unitSource,
-        String confidenceLevel
+        Integer supplyHouseholdCount
 ) {
     public static AnnouncementUnitResponse from(AnnouncementUnit unit) {
         return new AnnouncementUnitResponse(
@@ -39,10 +36,7 @@ public record AnnouncementUnitResponse(
                 unit.getMonthlyRentAmount(),
                 unit.getSalePriceMin(),
                 unit.getSalePriceMax(),
-                unit.getSalePriceRaw(),
-                unit.getSupplyHouseholdCount(),
-                unit.getUnitSource() != null ? unit.getUnitSource().name() : null,
-                unit.getConfidenceLevel() != null ? unit.getConfidenceLevel().name() : null
+                unit.getSupplyHouseholdCount()
         );
     }
 }

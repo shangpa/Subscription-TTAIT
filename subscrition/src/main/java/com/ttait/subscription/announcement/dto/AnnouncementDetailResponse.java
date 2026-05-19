@@ -2,6 +2,7 @@ package com.ttait.subscription.announcement.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public record AnnouncementDetailResponse(
         Long announcementId,               // 공고 PK
@@ -27,6 +28,7 @@ public record AnnouncementDetailResponse(
         String applicationDatetimeText,    // 청약 신청 일시 (원문)
         String guideText,                  // 안내 사항
         String contactPhone,               // 문의 전화번호
-        String sourceUrl                   // 원본 공고 URL
+        String sourceUrl,                  // 원본 공고 URL
+        List<AnnouncementUnitResponse> units // 세부 공급 단위
 ) {
 }
