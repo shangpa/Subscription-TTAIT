@@ -249,6 +249,22 @@ export default function AdminReviewDetailPage() {
   ].filter(Boolean).join('\n\n');
 
   const units = data.units || data.announcementUnits || [];
+  const summaryItems = [
+    ['원천', data.sourcePrimary, 'badge'],
+    ['원천 공고 ID', data.sourceNoticeId],
+    ['원천 URL', data.sourceNoticeUrl, 'link'],
+    ['공고 상태', data.noticeStatus, 'badge'],
+    ['공고일', data.announcementDate],
+    ['신청 시작일', data.applicationStartDate],
+    ['신청 마감일', data.applicationEndDate],
+    ['당첨자 발표일', data.winnerAnnouncementDate],
+    ['시/군/구', data.regionLevel2],
+    ['상세 주소', data.fullAddress],
+    ['단지명', data.complexName],
+    ['공급유형', data.supplyType],
+    ['주택유형', data.houseType],
+    ['Unit 수', data.unitCount ?? units.length],
+  ];
 
   return (
     <div style={S.container}>
@@ -266,6 +282,24 @@ export default function AdminReviewDetailPage() {
         현재 상태: <span style={{ fontWeight: 600, color: '#222' }}>{data.reviewStatus}</span>
         <span style={{ marginLeft: 10, color: '#6a6a6a' }}>APPROVED/CORRECTED 상태만 public API에 노출됩니다.</span>
       </p>
+
+      <div style={S.card}>
+        <h2 style={S.cardTitle}>공고 요약</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          {summaryItems.map(([label, value, type]) => (
+            <div key={label} style={{ borderRadius: 14, background: '#fafafa', padding: 14, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#6a6a6a', marginBottom: 7 }}>{label}</div>
+              {type === 'link' ? (
+                value ? <a href={value} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: '#222', wordBreak: 'break-all' }}>원문 열기</a> : <span style={{ fontSize: 14, color: '#222', fontWeight: 600 }}>-</span>
+              ) : type === 'badge' ? (
+                <Badge kind="source" value={value} />
+              ) : (
+                <div style={{ fontSize: 14, color: '#222', fontWeight: 600, lineHeight: 1.5, wordBreak: 'keep-all' }}>{fmt(value)}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div style={S.card}>
         <h2 style={S.cardTitle}>AI 파싱 결과</h2>
