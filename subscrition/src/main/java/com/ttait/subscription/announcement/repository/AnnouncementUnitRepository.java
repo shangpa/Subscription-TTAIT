@@ -20,6 +20,10 @@ public interface AnnouncementUnitRepository extends JpaRepository<AnnouncementUn
             Long announcementId,
             AddressResolutionStatus addressStatus);
 
+    List<AnnouncementUnit> findByAnnouncementIdAndAddressStatusInAndDeletedFalseOrderByUnitOrderAsc(
+            Long announcementId,
+            List<AddressResolutionStatus> addressStatuses);
+
     List<AnnouncementUnit> findByAnnouncementIdInAndDeletedFalseOrderByAnnouncementIdAscUnitOrderAsc(List<Long> announcementIds);
 
     Optional<AnnouncementUnit> findByIdAndAnnouncementIdAndDeletedFalse(Long id, Long announcementId);

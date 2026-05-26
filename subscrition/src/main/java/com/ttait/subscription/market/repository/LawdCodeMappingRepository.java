@@ -9,4 +9,9 @@ public interface LawdCodeMappingRepository extends JpaRepository<LawdCodeMapping
     Optional<LawdCodeMapping> findFirstByRegionLevel2AndLegalDongNameAndActiveTrue(
             String regionLevel2,
             String legalDongName);
+
+    Optional<LawdCodeMapping> findFirstByRegionLevel2AndLegalDongNameAndLegalDongCode(
+            String regionLevel2,
+            String legalDongName,
+            String legalDongCode);
 }

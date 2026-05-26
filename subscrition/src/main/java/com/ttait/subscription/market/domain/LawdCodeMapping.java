@@ -60,6 +60,11 @@ public class LawdCodeMapping {
         this.active = active == null || active;
     }
 
+    public void updateMetadata(String regionLevel1, Boolean active) {
+        this.regionLevel1 = normalize(regionLevel1);
+        this.active = active == null || active;
+    }
+
     private String normalize(String value) {
         return value == null || value.isBlank() ? null : value.trim().replaceAll("\\s+", " ");
     }
