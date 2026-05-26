@@ -19,16 +19,43 @@ public class AnnouncementUnitAddressEnrichmentService {
         this.addressNormalizationService = addressNormalizationService;
     }
 
-    public void enrichNotRequestedUnits(Long announcementId) {
+    public AddressEnrichmentResult enrichNotRequestedUnits(Long announcementId) {
+        return enrichUnits(announcementId, false);
+    }
+
+    public AddressEnrichmentResult enrichUnits(Long announcementId, boolean retryNoLawdCode) {
+        List<AddressResolutionStatus> statuses = retryNoLawdCode
+                ? List.of(AddressResolutionStatus.NOT_REQUESTED, AddressResolutionStatus.NO_LAWD_CODE)
+                : List.of(AddressResolutionStatus.NOT_REQUESTED);
         List<AnnouncementUnit> units = announcementUnitRepository
-                .findByAnnouncementIdAndAddressStatusAndDeletedFalseOrderByUnitOrderAsc(
+                .findByAnnouncementIdAndAddressStatusInAndDeletedFalseOrderByUnitOrderAsc(
                         announcementId,
-                        AddressResolutionStatus.NOT_REQUESTED
+                        statuses
                 );
 
+        int successCount = 0;
+        int noAddressCount = 0;
+        int noLawdCodeCount = 0;
         for (AnnouncementUnit unit : units) {
             addressNormalizationService.normalizeUnitAddress(unit);
             announcementUnitRepository.save(unit);
+            if (unit.getAddressStatus() == AddressResolutionStatus.SUCCESS) {
+                successCount++;
+            } else if (unit.getAddressStatus() == AddressResolutionStatus.NO_ADDRESS) {
+                noAddressCount++;
+            } else if (unit.getAddressStatus() == AddressResolutionStatus.NO_LAWD_CODE) {
+                noLawdCodeCount++;
+            }
         }
+        return new AddressEnrichmentResult(announcementId, units.size(), successCount, noAddressCount, noLawdCodeCount);
+    }
+
+    public record AddressEnrichmentResult(
+            Long announcementId,
+            int processedCount,
+            int successCount,
+            int noAddressCount,
+            int noLawdCodeCount
+    ) {
     }
 }
