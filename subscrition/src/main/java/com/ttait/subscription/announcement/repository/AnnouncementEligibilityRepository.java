@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,9 +19,11 @@ public interface AnnouncementEligibilityRepository extends JpaRepository<Announc
 
     List<AnnouncementEligibility> findByAnnouncementIdIn(Collection<Long> announcementIds);
 
+    @EntityGraph(attributePaths = "announcement")
     @Query("SELECT e FROM AnnouncementEligibility e WHERE e.reviewStatus = :status AND e.announcement.deleted = false")
     Page<AnnouncementEligibility> findByReviewStatus(@Param("status") ParseReviewStatus status, Pageable pageable);
 
+    @EntityGraph(attributePaths = "announcement")
     @Query("SELECT e FROM AnnouncementEligibility e WHERE e.announcement.deleted = false")
     Page<AnnouncementEligibility> findAllActive(Pageable pageable);
 

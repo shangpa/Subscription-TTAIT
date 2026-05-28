@@ -1,12 +1,12 @@
 package com.ttait.subscription.announcement.service;
 
 import com.ttait.subscription.announcement.domain.Announcement;
-import com.ttait.subscription.announcement.domain.AnnouncementCategory;
 import com.ttait.subscription.announcement.domain.AnnouncementDetail;
 import com.ttait.subscription.announcement.domain.AnnouncementStatus;
 import com.ttait.subscription.announcement.domain.ParseReviewStatus;
 import com.ttait.subscription.announcement.dto.AnnouncementDetailResponse;
 import com.ttait.subscription.announcement.dto.AnnouncementListItemResponse;
+import com.ttait.subscription.announcement.dto.AnnouncementUnitResponse;
 import com.ttait.subscription.announcement.dto.CategoryFilterOption;
 import com.ttait.subscription.announcement.dto.CategoryFilterOptionResponse;
 import com.ttait.subscription.announcement.dto.FilterOptionResponse;
@@ -14,16 +14,12 @@ import com.ttait.subscription.announcement.repository.AnnouncementCategoryReposi
 import com.ttait.subscription.announcement.repository.AnnouncementDetailRepository;
 import com.ttait.subscription.announcement.repository.AnnouncementRepository;
 import com.ttait.subscription.announcement.repository.AnnouncementSearchCondition;
+import com.ttait.subscription.announcement.repository.AnnouncementUnitRepository;
 import com.ttait.subscription.common.exception.ApiException;
 import com.ttait.subscription.external.support.AnnouncementNormalizer;
 import com.ttait.subscription.user.domain.enums.CategoryCode;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -43,15 +39,18 @@ public class AnnouncementQueryService {
     private final AnnouncementRepository announcementRepository;
     private final AnnouncementDetailRepository announcementDetailRepository;
     private final AnnouncementCategoryRepository announcementCategoryRepository;
+    private final AnnouncementUnitRepository announcementUnitRepository;
     private final AnnouncementNormalizer announcementNormalizer;
 
     public AnnouncementQueryService(AnnouncementRepository announcementRepository,
-                                     AnnouncementDetailRepository announcementDetailRepository,
-                                     AnnouncementCategoryRepository announcementCategoryRepository,
-                                     AnnouncementNormalizer announcementNormalizer) {
+                                      AnnouncementDetailRepository announcementDetailRepository,
+                                      AnnouncementCategoryRepository announcementCategoryRepository,
+                                      AnnouncementUnitRepository announcementUnitRepository,
+                                      AnnouncementNormalizer announcementNormalizer) {
         this.announcementRepository = announcementRepository;
         this.announcementDetailRepository = announcementDetailRepository;
         this.announcementCategoryRepository = announcementCategoryRepository;
+        this.announcementUnitRepository = announcementUnitRepository;
         this.announcementNormalizer = announcementNormalizer;
     }
 
@@ -96,7 +95,12 @@ public class AnnouncementQueryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "announcement not found"));
         AnnouncementDetail detail = announcementDetailRepository.findByAnnouncementIdAndDeletedFalse(announcementId)
                 .orElse(null);
-        return toDetailResponse(announcement, detail);
+        List<AnnouncementUnitResponse> units = announcementUnitRepository
+                .findByAnnouncementIdAndDeletedFalseOrderByUnitOrderAsc(announcementId)
+                .stream()
+                .map(AnnouncementUnitResponse::from)
+                .toList();
+        return toDetailResponse(announcement, detail, units);
     }
 
     public FilterOptionResponse regionLevel1Options() {
@@ -176,7 +180,8 @@ public class AnnouncementQueryService {
         );
     }
 
-    private AnnouncementDetailResponse toDetailResponse(Announcement announcement, AnnouncementDetail detail) {
+    private AnnouncementDetailResponse toDetailResponse(Announcement announcement, AnnouncementDetail detail,
+                                                        List<AnnouncementUnitResponse> units) {
         return new AnnouncementDetailResponse(
                 announcement.getId(),
                 announcement.getNoticeName(),
@@ -201,25 +206,9 @@ public class AnnouncementQueryService {
                 detail != null ? detail.getApplicationDatetimeText() : null,
                 detail != null ? detail.getGuideText() : null,
                 detail != null ? detail.getContactPhone() : null,
-                announcement.getSourceNoticeUrl()
+                announcement.getSourceNoticeUrl(),
+                units
         );
-    }
-
-    private List<Long> extractIds(List<Announcement> announcements) {
-        return announcements.stream().map(Announcement::getId).toList();
-    }
-
-    private Map<Long, Set<CategoryCode>> loadCategoryMap(Collection<Long> announcementIds) {
-        Map<Long, Set<CategoryCode>> categoryMap = new HashMap<>();
-        if (announcementIds.isEmpty()) {
-            return categoryMap;
-        }
-
-        for (AnnouncementCategory category : announcementCategoryRepository.findByAnnouncementIdIn(announcementIds)) {
-            categoryMap.computeIfAbsent(category.getAnnouncement().getId(), ignored -> EnumSet.noneOf(CategoryCode.class))
-                    .add(category.getCategoryCode());
-        }
-        return categoryMap;
     }
 
     private AnnouncementStatus parseStatus(String status) {

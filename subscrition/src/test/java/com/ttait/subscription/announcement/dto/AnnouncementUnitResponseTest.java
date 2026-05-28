@@ -28,13 +28,17 @@ class AnnouncementUnitResponseTest {
         assertThat(response.exclusiveAreaValue()).isEqualByComparingTo(new BigDecimal("59.84"));
         assertThat(response.depositAmount()).isEqualTo(5000L);
         assertThat(response.monthlyRentAmount()).isEqualTo(25L);
-        assertThat(response.salePriceRaw()).isEqualTo("분양가 원문");
-        assertThat(response.unitSource()).isEqualTo("MERGED");
-        assertThat(response.confidenceLevel()).isEqualTo("HIGH");
         assertThat(response.latitude()).isNull();
         assertThat(response.longitude()).isNull();
         assertThat(response.geocodeStatus()).isEqualTo("NOT_REQUESTED");
         assertThat(response.geocodedAt()).isNull();
+        assertThat(recordComponentNames()).doesNotContain(
+                "rawText",
+                "sourceUnitKey",
+                "salePriceRaw",
+                "matchSource",
+                "unitSource",
+                "confidenceLevel");
     }
 
     @Test
@@ -49,8 +53,13 @@ class AnnouncementUnitResponseTest {
         assertThat(response.longitude()).isEqualByComparingTo(new BigDecimal("126.9780000"));
         assertThat(response.geocodeStatus()).isEqualTo("SUCCESS");
         assertThat(response.geocodedAt()).isEqualTo(geocodedAt);
-        assertThat(recordComponentNames(AnnouncementUnitResponse.class))
-                .doesNotContain("geocodeMessage", "rawText", "sourceUnitKey", "rawNaverPayload", "naverPayload", "naverApiKey");
+        assertThat(recordComponentNames()).doesNotContain(
+                "geocodeMessage",
+                "rawText",
+                "sourceUnitKey",
+                "rawNaverPayload",
+                "naverPayload",
+                "naverApiKey");
     }
 
     @Test
@@ -64,12 +73,6 @@ class AnnouncementUnitResponseTest {
         assertThat(response.longitude()).isNull();
         assertThat(response.geocodeStatus()).isNull();
         assertThat(response.geocodedAt()).isNull();
-    }
-
-    private String[] recordComponentNames(Class<?> recordType) {
-        return Arrays.stream(recordType.getRecordComponents())
-                .map(component -> component.getName())
-                .toArray(String[]::new);
     }
 
     private AnnouncementUnit unit() {
@@ -99,5 +102,11 @@ class AnnouncementUnitResponseTest {
                 .build();
         ReflectionTestUtils.setField(unit, "id", 10L);
         return unit;
+    }
+
+    private String[] recordComponentNames() {
+        return Arrays.stream(AnnouncementUnitResponse.class.getRecordComponents())
+                .map(component -> component.getName())
+                .toArray(String[]::new);
     }
 }
