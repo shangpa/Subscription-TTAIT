@@ -23,6 +23,10 @@ const S = {
   infoItem: { padding: '13px 0', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'flex-start', gap: 12 },
   infoLabel: { fontSize: 13, color: '#6a6a6a', fontWeight: 400, minWidth: 80, flexShrink: 0, paddingTop: 2 },
   infoValue: { fontSize: 14, color: '#222', fontWeight: 500, lineHeight: 1.5 },
+  unitGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 },
+  unitCard: { background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, padding: 18 },
+  unitBadge: { display: 'inline-flex', alignItems: 'center', borderRadius: 999, padding: '5px 10px', background: '#fff0f3', color: '#ff385c', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' },
+  unitMeta: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' },
   stickyCard: {
     position: 'sticky', top: 90, background: '#fff', borderRadius: 20, padding: 28,
     boxShadow: 'var(--shadow-card)',
@@ -38,6 +42,87 @@ const S = {
     transition: 'border-color 0.15s',
   },
   quickRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' },
+};
+
+
+const LocationInfoSection = ({ sectionTitleStyle, complexName, fullAddress, latitude, longitude }) => {
+  const address = fullAddress ? String(fullAddress).trim() : '';
+  const title = complexName || '공급 위치';
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+  if (!address) return null;
+
+  const naverMapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(address)}`;
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard?.writeText(address);
+    } catch { /* clipboard unsupported */ }
+  };
+
+  return (
+    <div style={{ marginBottom: 40 }}>
+      <h2 style={sectionTitleStyle}>위치 정보</h2>
+      <div style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 20, overflow: 'hidden', background: '#fff', boxShadow: 'rgba(0,0,0,0.02) 0px 1px 4px' }}>
+        {hasCoords ? (
+          <div style={{
+            position: 'relative', height: 300, overflow: 'hidden',
+            background: '#eef3f7',
+            backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.75) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.75) 1px, transparent 1px), linear-gradient(135deg, #edf7f2 0%, #e8f1fb 52%, #f7f3ec 100%)',
+            backgroundSize: '56px 56px, 56px 56px, 100% 100%',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, opacity: 0.68 }}>
+              <div style={{ position: 'absolute', left: '-6%', top: '44%', width: '112%', height: 24, borderRadius: 999, background: '#fff', transform: 'rotate(-8deg)', boxShadow: '0 0 0 1px rgba(0,0,0,0.03)' }} />
+              <div style={{ position: 'absolute', left: '18%', top: '-10%', width: 24, height: '120%', borderRadius: 999, background: '#fff', transform: 'rotate(20deg)', boxShadow: '0 0 0 1px rgba(0,0,0,0.03)' }} />
+              <div style={{ position: 'absolute', right: '12%', top: '-6%', width: 18, height: '118%', borderRadius: 999, background: '#fff', transform: 'rotate(-30deg)', boxShadow: '0 0 0 1px rgba(0,0,0,0.03)' }} />
+            </div>
+            <div style={{ position: 'absolute', left: '50%', top: '50%', width: 128, height: 128, borderRadius: '50%', background: 'rgba(255,56,92,0.10)', transform: 'translate(-50%, -50%)' }} />
+            <div style={{ position: 'absolute', left: '50%', top: '50%', width: 58, height: 58, borderRadius: '50%', background: 'rgba(255,56,92,0.18)', transform: 'translate(-50%, -50%)' }} />
+            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -100%)', filter: 'drop-shadow(0 8px 14px rgba(255,56,92,0.28))' }}>
+              <div style={{ width: 42, height: 42, borderRadius: '50% 50% 50% 0', background: '#ff385c', border: '3px solid #fff', transform: 'rotate(-45deg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" width="18" height="18" style={{ transform: 'rotate(45deg)' }}>
+                  <path d="M3 21h18" /><path d="M5 21V7l8-4v18" /><path d="M19 21V11l-6-4" /><path d="M9 9h.01M9 13h.01M9 17h.01" />
+                </svg>
+              </div>
+            </div>
+            <div style={{ position: 'absolute', left: 20, bottom: 20, maxWidth: 'calc(100% - 40px)', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.94)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', backdropFilter: 'blur(10px)' }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#222', marginBottom: 4 }}>{title}</p>
+              <p style={{ fontSize: 13, color: '#6a6a6a', lineHeight: 1.5 }}>{address}</p>
+            </div>
+            <span style={{ position: 'absolute', top: 16, right: 16, padding: '6px 10px', borderRadius: 999, background: '#fff', color: '#ff385c', fontSize: 12, fontWeight: 700, boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+              지도 표시 가능
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: 20, background: '#fff8f9', borderBottom: '1px solid rgba(255,56,92,0.12)' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#fff0f3', color: '#ff385c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 1 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#222', marginBottom: 4 }}>주소만 제공된 위치입니다</p>
+              <p style={{ fontSize: 13, color: '#6a6a6a', lineHeight: 1.6 }}>좌표가 내려오면 이 영역에 지도와 마커가 표시됩니다. 현재는 지도 공간을 만들지 않고 주소 정보만 보여줍니다.</p>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 16, alignItems: 'center', padding: 20 }}>
+          <div>
+            <p style={{ fontSize: 13, color: '#6a6a6a', marginBottom: 4 }}>{title}</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#222', lineHeight: 1.55 }}>{address}</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <a href={naverMapUrl} target="_blank" rel="noopener noreferrer" style={{ padding: '10px 14px', borderRadius: 10, background: '#03c75a', color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+              네이버 지도에서 보기
+            </a>
+            <button type="button" onClick={handleCopyAddress} style={{ padding: '10px 14px', borderRadius: 10, background: '#fff', border: '1px solid #c1c1c1', color: '#222', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              주소 복사
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default function AnnouncementDetailPage() {
@@ -95,6 +180,15 @@ export default function AnnouncementDetailPage() {
   const dday = calcDday(a.applicationEndDate);
   const ddayColor = getDdayColor(a.applicationEndDate);
   const val = (v) => v ?? '-';
+  const amount = (v) => v != null ? `${formatPrice(v)} 만원` : '-';
+  const area = (unit) => unit.exclusiveAreaText || (unit.exclusiveAreaValue != null ? `${unit.exclusiveAreaValue}㎡` : '-');
+  const salePrice = (unit) => {
+    if (unit.salePriceMin != null && unit.salePriceMax != null) return `${formatPrice(unit.salePriceMin)} ~ ${formatPrice(unit.salePriceMax)} 만원`;
+    if (unit.salePriceMin != null) return `${formatPrice(unit.salePriceMin)} 만원부터`;
+    if (unit.salePriceMax != null) return `${formatPrice(unit.salePriceMax)} 만원까지`;
+    return '-';
+  };
+  const units = Array.isArray(a.units) ? a.units : [];
 
   const infoItems = [
     ['공급기관', val(a.providerName)],
@@ -171,6 +265,15 @@ export default function AnnouncementDetailPage() {
             </div>
           </div>
 
+
+          <LocationInfoSection
+            sectionTitleStyle={S.sectionTitle}
+            complexName={a.complexName}
+            fullAddress={a.fullAddress}
+            latitude={a.latitude ?? a.lat}
+            longitude={a.longitude ?? a.lng}
+          />
+
           {/* Cost Info */}
           <div style={{ marginBottom: 40 }}>
             <h2 style={S.sectionTitle}>비용 정보</h2>
@@ -203,6 +306,42 @@ export default function AnnouncementDetailPage() {
               ))}
             </div>
           </div>
+
+          {units.length > 0 && (
+            <div style={{ marginBottom: 40 }}>
+              <h2 style={S.sectionTitle}>공급 단위 정보</h2>
+              <div style={S.unitGrid}>
+                {units.map((unit, idx) => (
+                  <div key={`${unit.unitOrder ?? idx}-${unit.complexName ?? ''}-${unit.houseType ?? ''}`} style={S.unitCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#222', lineHeight: 1.4 }}>{val(unit.complexName)}</div>
+                        <div style={{ fontSize: 12, color: '#6a6a6a', lineHeight: 1.5, marginTop: 4 }}>
+                          {[unit.regionLevel1, unit.regionLevel2].filter(Boolean).join(' ') || '-'}
+                        </div>
+                      </div>
+                      <span style={S.unitBadge}>#{unit.unitOrder ?? idx + 1}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6a6a6a', lineHeight: 1.6, marginBottom: 10 }}>{val(unit.fullAddress)}</div>
+                    {[
+                      ['공급유형', val(unit.supplyType)],
+                      ['주택유형', val(unit.houseType)],
+                      ['전용면적', area(unit)],
+                      ['보증금', amount(unit.depositAmount)],
+                      ['월세', amount(unit.monthlyRentAmount)],
+                      ['분양가', salePrice(unit)],
+                      ['공급세대수', unit.supplyHouseholdCount != null ? `${unit.supplyHouseholdCount} 세대` : '-'],
+                    ].map(([label, value]) => (
+                      <div key={label} style={S.unitMeta}>
+                        <span style={{ fontSize: 12, color: '#6a6a6a', flexShrink: 0 }}>{label}</span>
+                        <span style={{ fontSize: 13, color: '#222', fontWeight: 600, textAlign: 'right' }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Guide Text */}
           {a.guideText && (

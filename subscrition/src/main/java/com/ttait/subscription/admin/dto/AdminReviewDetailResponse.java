@@ -6,6 +6,7 @@ import com.ttait.subscription.announcement.domain.AnnouncementEligibility;
 import com.ttait.subscription.announcement.domain.ConfidenceLevel;
 import com.ttait.subscription.announcement.domain.MaritalTargetType;
 import com.ttait.subscription.announcement.domain.ParseReviewStatus;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,7 +14,21 @@ public record AdminReviewDetailResponse(
         Long announcementId,   // 공고 PK
         String noticeName,     // 공고명
         String providerName,   // 공급 기관명
+        String sourcePrimary,  // 공고 출처
+        String sourceNoticeId,  // 출처 원본 공고 ID
+        String sourceNoticeUrl, // 원본 공고 URL
+        String noticeStatus,   // 공고 상태
+        LocalDate announcementDate,       // 공고 게시일
+        LocalDate applicationStartDate,   // 청약 신청 시작일
+        LocalDate applicationEndDate,     // 청약 신청 마감일
+        LocalDate winnerAnnouncementDate, // 당첨자 발표일
         String regionLevel1,   // 광역시/도
+        String regionLevel2,   // 시/군/구
+        String fullAddress,    // 전체 주소
+        String complexName,    // 단지명
+        String supplyType,     // 공급 유형
+        String houseType,      // 주택 유형
+        Long unitCount,        // 공급 단위 수
 
         Long depositAmount,           // 보증금 (만원, AI 파싱 결과)
         Long monthlyRentAmount,       // 월세 (만원, AI 파싱 결과)
@@ -60,7 +75,21 @@ public record AdminReviewDetailResponse(
                 announcement.getId(),
                 announcement.getNoticeName(),
                 announcement.getProviderName(),
+                announcement.getSourcePrimary().name(),
+                announcement.getSourceNoticeId(),
+                announcement.getSourceNoticeUrl(),
+                announcement.getNoticeStatus().name(),
+                announcement.getAnnouncementDate(),
+                announcement.getApplicationStartDate(),
+                announcement.getApplicationEndDate(),
+                announcement.getWinnerAnnouncementDate(),
                 announcement.getRegionLevel1(),
+                announcement.getRegionLevel2(),
+                announcement.getFullAddress(),
+                announcement.getComplexName(),
+                announcement.getSupplyTypeNormalized(),
+                announcement.getHouseTypeNormalized(),
+                (long) units.size(),
 
                 announcement.getDepositAmount(),
                 announcement.getMonthlyRentAmount(),

@@ -18,7 +18,10 @@ import com.ttait.subscription.common.exception.ApiException;
 import com.ttait.subscription.external.service.NoticeImportOrchestrator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -56,12 +59,13 @@ public class AdminReviewService {
     // 검수 상태별 공고 목록 페이징 조회 (읽기 전용 트랜잭션으로 성능 최적화)
     @Transactional(readOnly = true)
     public Page<AdminReviewListResponse> listByStatus(ParseReviewStatus status, Pageable pageable) {
-        if (status == null) {
-            return eligibilityRepository.findAllActive(pageable)
-                    .map(AdminReviewListResponse::from);
-        }
-        return eligibilityRepository.findByReviewStatus(status, pageable)
-                .map(AdminReviewListResponse::from);
+        Page<AnnouncementEligibility> eligibilities = status == null
+                ? eligibilityRepository.findAllActive(pageable)
+                : eligibilityRepository.findByReviewStatus(status, pageable);
+        Map<Long, Long> unitCountByAnnouncementId = loadUnitCountByAnnouncementId(eligibilities.getContent());
+        return eligibilities.map(eligibility -> AdminReviewListResponse.from(
+                eligibility,
+                unitCountByAnnouncementId.getOrDefault(eligibility.getAnnouncement().getId(), 0L)));
     }
 
     // AI 파싱 결과(eligibility) + 원문(detail) + 공고 기본정보를 합쳐서 반환
@@ -80,6 +84,20 @@ public class AdminReviewService {
                 .map(AdminAnnouncementUnitResponse::from)
                 .toList();
         return AdminReviewDetailResponse.from(announcement, detail, eligibility, units);
+    }
+
+    private Map<Long, Long> loadUnitCountByAnnouncementId(List<AnnouncementEligibility> eligibilities) {
+        List<Long> announcementIds = eligibilities.stream()
+                .map(eligibility -> eligibility.getAnnouncement().getId())
+                .toList();
+        if (announcementIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return announcementUnitRepository.countUnitsByAnnouncementIds(announcementIds).stream()
+                .collect(Collectors.toMap(
+                        AnnouncementUnitRepository.UnitCountProjection::getAnnouncementId,
+                        AnnouncementUnitRepository.UnitCountProjection::getUnitCount,
+                        (left, right) -> left));
     }
 
     // 검수 액션 분기 처리
