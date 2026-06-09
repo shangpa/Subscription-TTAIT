@@ -1,6 +1,7 @@
 package com.ttait.subscription.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -21,6 +22,7 @@ import com.ttait.subscription.external.service.NoticeImportOrchestrator;
 import com.ttait.subscription.external.support.CanonicalJsonHasher;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -161,6 +163,20 @@ class AdminLhImportManagementServiceTest {
         assertThat(second.getStatus()).isEqualTo(LhImportCandidateStatus.IMPORTED);
         then(candidateRepository).should().findByIdIn(List.of(2L, 4L));
         then(orchestrator).should(times(2)).importPreparedLhNotices(any(), any(Boolean.class));
+    }
+
+    @Test
+    void importSelectedRejectsMoreThanOneHundredCandidateIds() {
+        List<Long> candidateIds = LongStream.rangeClosed(1, 101)
+                .boxed()
+                .toList();
+
+        assertThatThrownBy(() -> service.importSelected(new LhSelectedImportRequest(candidateIds, null)))
+                .isInstanceOf(com.ttait.subscription.common.exception.ApiException.class)
+                .hasMessage("candidateIds max size is 100");
+
+        then(candidateRepository).shouldHaveNoInteractions();
+        then(orchestrator).shouldHaveNoInteractions();
     }
 
     @Test
