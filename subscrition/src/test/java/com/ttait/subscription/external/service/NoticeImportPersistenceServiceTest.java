@@ -100,7 +100,7 @@ class NoticeImportPersistenceServiceTest {
         );
 
         ArgumentCaptor<AnnouncementUnit> unitCaptor = ArgumentCaptor.forClass(AnnouncementUnit.class);
-        verify(announcementUnitRepository, times(2)).deleteByAnnouncementId(1L);
+        verify(announcementUnitRepository, times(2)).deleteAllByAnnouncementIdInBulk(1L);
         verify(announcementUnitRepository, times(2)).save(unitCaptor.capture());
         assertThat(unitCaptor.getAllValues())
                 .extracting(AnnouncementUnit::getUnitSource)

@@ -5,6 +5,7 @@ import com.ttait.subscription.admin.dto.LhImportCandidateListResponse;
 import com.ttait.subscription.admin.dto.LhImportRunResult;
 import com.ttait.subscription.admin.dto.LhSelectedImportRequest;
 import com.ttait.subscription.admin.service.AdminLhImportManagementService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +41,7 @@ public class AdminLhImportManagementController {
     }
 
     @PostMapping("/selected")
-    public ResponseEntity<LhImportRunResult> importSelected(@RequestBody LhSelectedImportRequest request) {
+    public ResponseEntity<LhImportRunResult> importSelected(@Valid @RequestBody LhSelectedImportRequest request) {
         return ResponseEntity.ok(importManagementService.importSelected(request));
     }
 
