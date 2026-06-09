@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -46,6 +47,14 @@ public interface AnnouncementUnitRepository extends JpaRepository<AnnouncementUn
             String sourceUnitKey);
 
     void deleteByAnnouncementId(Long announcementId);
+
+    /**
+     * Used by LH reimport's delete-and-replace flow. Bulk delete bypasses managed entities,
+     * so flush and clear the persistence context to avoid stale AnnouncementUnit updates.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM AnnouncementUnit u WHERE u.announcement.id = :announcementId")
+    int deleteAllByAnnouncementIdInBulk(@Param("announcementId") Long announcementId);
 
     interface UnitCountProjection {
         Long getAnnouncementId();
