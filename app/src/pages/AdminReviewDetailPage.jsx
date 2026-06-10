@@ -375,7 +375,7 @@ export default function AdminReviewDetailPage() {
         dealYmTo: marketDealYmRange.dealYmTo,
         numOfRows: 100,
         maxPages: 10,
-        minimumSampleCount: 3,
+        minimumSampleCount: 1,
         retryNoLawdCode: true,
       });
 

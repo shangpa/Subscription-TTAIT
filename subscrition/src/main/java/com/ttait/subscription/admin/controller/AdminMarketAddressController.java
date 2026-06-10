@@ -11,12 +11,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Admin - Market Address", description = "주변시세 법정동 매핑 관리자 API")
 @RestController
@@ -85,6 +91,17 @@ public class AdminMarketAddressController {
                             """))
             )
     )
+    @PostMapping(value = "/lawd-code-mappings/import/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<LawdCodeMappingSeedResponse> importLawdCodeMappingsFromFile(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) String delimiter,
+            @RequestParam(required = false) Boolean activeOnly,
+            @RequestParam(required = false, defaultValue = "EUC-KR") String charset) throws IOException {
+        String content = new String(file.getBytes(), Charset.forName(charset));
+        return ResponseEntity.ok(addressService.importLawdCodeMappings(
+                new LawdCodeMappingSeedRequest(content, delimiter, activeOnly)));
+    }
+
     @PostMapping("/announcements/{announcementId}/normalize-units")
     public ResponseEntity<AddressNormalizationResponse> normalizeAnnouncementUnits(
             @PathVariable Long announcementId,
