@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -37,7 +38,11 @@ class AdminLhImportManagementControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminLhImportManagementController(importManagementService)).build();
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminLhImportManagementController(importManagementService))
+                .setValidator(validator)
+                .build();
     }
 
     @Test
@@ -82,6 +87,20 @@ class AdminLhImportManagementControllerTest {
         then(importManagementService).should().importSelected(request.capture());
         org.assertj.core.api.Assertions.assertThat(request.getValue().candidateIds()).containsExactly(1L, 2L);
         org.assertj.core.api.Assertions.assertThat(request.getValue().forceOrDefault()).isFalse();
+    }
+
+    @Test
+    void selectedImportRejectsMoreThanOneHundredCandidateIds() throws Exception {
+        List<Long> candidateIds = java.util.stream.LongStream.rangeClosed(1, 101)
+                .boxed()
+                .toList();
+
+        mockMvc.perform(post("/api/admin/import/lh/selected")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LhSelectedImportRequest(candidateIds, null))))
+                .andExpect(status().isBadRequest());
+
+        then(importManagementService).shouldHaveNoInteractions();
     }
 
     @Test

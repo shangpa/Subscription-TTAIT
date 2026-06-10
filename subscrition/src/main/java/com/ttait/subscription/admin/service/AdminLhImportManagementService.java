@@ -124,11 +124,14 @@ public class AdminLhImportManagementService {
         );
     }
 
-    @Transactional
     public LhImportRunResult importSelected(LhSelectedImportRequest request) {
         List<Long> candidateIds = request == null ? null : request.candidateIds();
         if (candidateIds == null || candidateIds.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "candidateIds is required");
+        }
+        if (candidateIds.size() > LhSelectedImportRequest.MAX_CANDIDATE_IDS) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "candidateIds max size is " + LhSelectedImportRequest.MAX_CANDIDATE_IDS);
         }
 
         List<LhImportCandidate> candidates = candidateRepository.findByIdIn(candidateIds);

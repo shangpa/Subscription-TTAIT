@@ -305,7 +305,8 @@ public class NoticeImportPersistenceService {
     }
 
     private void replaceUnits(Announcement announcement, String panId, JsonNode response, PdfParseResult pdfResult) {
-        announcementUnitRepository.deleteByAnnouncementId(announcement.getId());
+        announcementUnitRepository.deleteAllByAnnouncementIdInBulk(announcement.getId());
+        announcementUnitRepository.flush();
 
         List<LhUnitCandidate> lhCandidates = lhUnitCandidateExtractor.extract(
                 panId,
