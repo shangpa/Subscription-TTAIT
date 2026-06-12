@@ -5,6 +5,21 @@
 - 목적: 사용자가 즐겨찾기한 공고의 신청 일정을 모아 보고, 마감까지 남은 시간을 기준으로 우선순위를 관리하게 한다.
 - 핵심 원칙: 외부 캘린더 연동이나 새 알림 센터가 아니라, 기존 즐겨찾기와 공고 일정 데이터를 활용한 내부 일정 관리 기능이다.
 
+## 현재 빌드업 현황
+
+기획 본문은 기능 기획 단계의 원안을 유지한다. 아래 표는 2026-06-12 기준 실제 구현·검증이 어디까지 진행됐는지만 기록한다.
+
+| 영역 | 현재 상태 | 근거 |
+|---|---|---|
+| Backend API | 1차 구현 완료 | `GET /api/me/favorites/schedule`, `FavoriteScheduleService`, schedule DTO 추가 |
+| Backend 안정화 | 구현 완료 | `Asia/Seoul` 기준 날짜 계산, 표시 fallback, DB-level ordered page, 200건 cap, `returnedCount`, `truncated` 반영 |
+| Frontend 화면 | 1차 구현 확인 | `app/src/pages/FavoritesPage.jsx`에 `일정 관리`/`캘린더` 탭과 schedule API 호출 반영 |
+| 테스트 | backend 검증 완료 | service, controller, repository, Spring Boot HTTP E2E 테스트 추가 및 Gradle test/build 통과 |
+| 실제 DB E2E | MySQL local E2E 완료 | MySQL fixture 201건으로 `totalCount=201`, `returnedCount=200`, `truncated=true`, `DUE_TODAY` 우선 반환 확인 |
+| 남은 확인 | frontend build/browser QA 별도 확인 필요 | 현재 기획 문서 기준으로는 frontend 실제 브라우저 QA 기록이 별도 문서화되어 있지 않음 |
+
+관련 현행 기록은 `subscrition/docs/즐겨찾기 일정/현행_즐겨찾기_일정_DTO_컨트롤러_정리_2026-06-11.md`, `subscrition/docs/즐겨찾기 일정/현행_즐겨찾기_일정_안정화_변경노트_2026-06-12.md`, `subscrition/docs/즐겨찾기 일정/현행_즐겨찾기_일정_MySQL_E2E_테스트기록_2026-06-12.md`를 기준으로 본다.
+
 ## 1. 기능 한 줄 정의
 
 사용자가 관심 있는 공고를 즐겨찾기하면, 해당 공고들의 **공고일, 신청 시작일, 신청 마감일, 당첨자 발표일, 즐겨찾기 시각**을 모아 캘린더와 D-day 그룹으로 보여주는 기능이다.
