@@ -1,5 +1,9 @@
 # 프론트엔드 핸드오프: 내 조건 충족도 체크리스트 API
 
+## 현재 빌드업 현황
+
+이 문서는 기획 단계에서 만든 프론트 핸드오프 원안을 유지한다. 2026-06-12 기준으로는 backend API, backend 검증, 실제 E2E, `AnnouncementDetailPage.jsx`의 1차 frontend 반영까지 확인됐고, 별도 frontend build/browser QA 기록은 이 문서에 남아 있지 않다.
+
 ## 1. API 개요
 
 | 항목 | 내용 |
