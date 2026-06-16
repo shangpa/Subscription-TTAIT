@@ -26,12 +26,12 @@ const EVENT_META = {
 };
 
 const SUMMARY_ITEMS = [
-  { key: 'totalCount', label: '전체 즐겨찾기', color: '#222' },
-  { key: 'dueTodayCount', label: '오늘 마감', color: '#EF4444' },
-  { key: 'dueTomorrowCount', label: '내일 마감', color: '#F97316' },
-  { key: 'dueSoonCount', label: '7일 이내', color: '#F59E0B' },
-  { key: 'openCount', label: '접수 중', color: '#16A34A' },
-  { key: 'upcomingCount', label: '접수 예정', color: '#2563EB' },
+  { key: 'totalCount', label: '전체 즐겨찾기', color: '#222', statuses: null },
+  { key: 'dueTodayCount', label: '오늘 마감', color: '#EF4444', statuses: ['DUE_TODAY'] },
+  { key: 'dueTomorrowCount', label: '내일 마감', color: '#F97316', statuses: ['DUE_TOMORROW'] },
+  { key: 'dueSoonCount', label: '7일 이내', color: '#F59E0B', statuses: ['DUE_TODAY', 'DUE_TOMORROW', 'DUE_SOON'] },
+  { key: 'openCount', label: '접수 중', color: '#16A34A', statuses: ['DUE_TODAY', 'DUE_TOMORROW', 'DUE_SOON', 'OPEN'] },
+  { key: 'upcomingCount', label: '접수 예정', color: '#2563EB', statuses: ['UPCOMING'] },
 ];
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -73,7 +73,7 @@ function ChevronRightIcon() {
   );
 }
 
-function SummaryBadges({ summary }) {
+function SummaryBadges({ summary, activeFilter, onFilterChange }) {
   if (!summary) return null;
 
   return (
@@ -81,37 +81,50 @@ function SummaryBadges({ summary }) {
       <div style={S.sectionHead}>
         <div>
           <h2 style={S.sectionTitle}>일정 요약</h2>
-          <p style={S.sectionDesc}>즐겨찾기한 공고의 신청 마감과 접수 상태를 모아봤어요.</p>
+          <p style={S.sectionDesc}>항목을 클릭하면 해당 상태만 필터링됩니다.</p>
         </div>
         {summary.truncated && <span style={S.truncatedBadge}>200개 초과, 일부만 표시</span>}
       </div>
       <div style={S.summaryGrid}>
-        {SUMMARY_ITEMS.map(item => (
-          <div key={item.key} style={S.summaryCard(item.key === 'dueTodayCount')}>
-            <span style={S.summaryLabel}>{item.label}</span>
-            <strong style={{ ...S.summaryValue, color: item.color }}>{summary[item.key] ?? 0}</strong>
-          </div>
-        ))}
+        {SUMMARY_ITEMS.map(item => {
+          const isActive = activeFilter === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              style={S.summaryCard(item.key === 'dueTodayCount', isActive, item.color)}
+              onClick={() => onFilterChange && onFilterChange(isActive ? null : item.key)}
+            >
+              <span style={{ ...S.summaryLabel, color: isActive ? 'rgba(255,255,255,0.85)' : '#6a6a6a' }}>{item.label}</span>
+              <strong style={{ ...S.summaryValue, color: isActive ? '#fff' : item.color }}>{summary[item.key] ?? 0}</strong>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-function ScheduleView({ schedule, loading, onOpenAnnouncement }) {
-  if (loading) {
-    return <div style={S.loadingBox}>일정을 불러오는 중...</div>;
-  }
+function ScheduleView({ schedule, loading, onOpenAnnouncement, activeFilter, onClearFilter }) {
+  const [hoveredId, setHoveredId] = useState(null);
+
+  if (loading) return <LoadingSpinner />;
 
   const groups = Array.isArray(schedule?.groups) ? schedule.groups : [];
-  const hasItems = groups.some(group => Array.isArray(group.items) && group.items.length > 0);
+  const filterStatuses = activeFilter
+    ? (SUMMARY_ITEMS.find(i => i.key === activeFilter)?.statuses ?? null)
+    : null;
+  const visibleGroups = groups
+    .filter(group => Array.isArray(group.items) && group.items.length > 0)
+    .filter(group => !filterStatuses || filterStatuses.includes(group.key));
 
-  if (!hasItems) {
+  if (visibleGroups.length === 0) {
     return (
       <section style={S.section}>
         <EmptyState
-          icon="♡"
-          title="즐겨찾기한 공고가 없습니다"
-          description="관심 있는 공고를 즐겨찾기하면 마감 일정이 여기에 표시됩니다."
+          icon={activeFilter ? '🔍' : '♡'}
+          title={activeFilter ? '해당 상태의 공고가 없습니다' : '즐겨찾기한 공고가 없습니다'}
+          description={activeFilter ? '다른 항목을 선택하거나 전체 보기를 클릭해보세요.' : '관심 있는 공고를 즐겨찾기하면 마감 일정이 여기에 표시됩니다.'}
         />
       </section>
     );
@@ -122,13 +135,26 @@ function ScheduleView({ schedule, loading, onOpenAnnouncement }) {
       <div style={S.sectionHead}>
         <div>
           <h2 style={S.sectionTitle}>상태별 일정</h2>
-          <p style={S.sectionDesc}>백엔드 정렬 순서 그대로 상태별 그룹을 표시합니다.</p>
+          <p style={S.sectionDesc}>
+            {activeFilter
+              ? `'${SUMMARY_ITEMS.find(i => i.key === activeFilter)?.label}' 필터 적용 중`
+              : '마감이 임박한 순서로 정렬됩니다.'}
+          </p>
         </div>
+        {activeFilter && (
+          <button
+            type="button"
+            style={{ padding: '6px 12px', borderRadius: 999, border: '1px solid #c1c1c1', background: '#fff', fontSize: 12, fontWeight: 700, color: '#6a6a6a', cursor: 'pointer' }}
+            onClick={() => onClearFilter && onClearFilter()}
+          >
+            필터 해제
+          </button>
+        )}
       </div>
 
       <div style={S.groupStack}>
-        {groups.map(group => {
-          const items = Array.isArray(group.items) ? group.items : [];
+        {visibleGroups.map(group => {
+          const items = group.items;
           const meta = getStatusMeta(group.key);
 
           return (
@@ -139,39 +165,45 @@ function ScheduleView({ schedule, loading, onOpenAnnouncement }) {
                 <span style={S.groupCount}>{items.length}개</span>
               </div>
 
-              {items.length === 0 ? (
-                <div style={S.emptyGroup}>해당 상태의 공고가 없습니다.</div>
-              ) : (
-                <div style={S.scheduleCards}>
-                  {items.map(item => {
-                    const itemMeta = getStatusMeta(item.scheduleStatus || group.key);
-                    const isClosed = item.scheduleStatus === 'CLOSED';
+              <div style={S.scheduleCards}>
+                {items.map(item => {
+                  const itemMeta = getStatusMeta(item.scheduleStatus || group.key);
+                  const isClosed = item.scheduleStatus === 'CLOSED';
+                  const isHovered = hoveredId === item.announcementId;
 
-                    return (
-                      <article key={item.announcementId} style={S.scheduleCard(itemMeta, isClosed)}>
-                        <div style={S.scheduleMain}>
-                          <div style={S.badgeRow}>
-                            {item.dDayLabel && (
-                              <span style={S.ddayBadge(itemMeta)}>{item.dDayLabel}</span>
-                            )}
-                            <span style={S.statusBadge(itemMeta)}>{itemMeta.label}</span>
-                          </div>
-                          <h4 style={S.noticeTitle}>{item.noticeName}</h4>
-                          <p style={S.noticeProvider}>{item.providerName}</p>
-                          {item.statusMessage && <p style={{ ...S.statusMessage, color: itemMeta.color }}>{item.statusMessage}</p>}
-                          <div style={S.dateRows}>
-                            <span>신청 {fmtDate(item.applicationStartDate)} ~ {fmtDate(item.applicationEndDate)}</span>
-                            {item.winnerAnnouncementDate && <span>당첨 발표 {fmtDate(item.winnerAnnouncementDate)}</span>}
-                          </div>
+                  return (
+                    <article
+                      key={item.announcementId}
+                      style={{
+                        ...S.scheduleCard(itemMeta, isClosed),
+                        boxShadow: isHovered ? 'var(--shadow-hover)' : 'none',
+                        transform: isHovered ? 'translateY(-1px)' : 'none',
+                      }}
+                      onMouseEnter={() => setHoveredId(item.announcementId)}
+                      onMouseLeave={() => setHoveredId(null)}
+                    >
+                      <div style={S.scheduleMain}>
+                        <div style={S.badgeRow}>
+                          {item.dDayLabel && (
+                            <span style={S.ddayBadge(itemMeta)}>{item.dDayLabel}</span>
+                          )}
+                          <span style={S.statusBadge(itemMeta)}>{itemMeta.label}</span>
                         </div>
-                        <button style={S.outlineBtn} onClick={() => onOpenAnnouncement(item.announcementId)}>
-                          {item.actionLabel || '공고 확인'}
-                        </button>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
+                        <h4 style={S.noticeTitle}>{item.noticeName}</h4>
+                        <p style={S.noticeProvider}>{item.providerName}</p>
+                        {item.statusMessage && <p style={{ ...S.statusMessage, color: itemMeta.color }}>{item.statusMessage}</p>}
+                        <div style={S.dateRows}>
+                          <span>신청 {fmtDate(item.applicationStartDate)} ~ {fmtDate(item.applicationEndDate)}</span>
+                          {item.winnerAnnouncementDate && <span>당첨 발표 {fmtDate(item.winnerAnnouncementDate)}</span>}
+                        </div>
+                      </div>
+                      <button style={S.outlineBtn} onClick={() => onOpenAnnouncement(item.announcementId)}>
+                        {item.actionLabel || '공고 확인'}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -181,21 +213,15 @@ function ScheduleView({ schedule, loading, onOpenAnnouncement }) {
 }
 
 function CalendarView({ schedule, loading }) {
-  const firstEventDate = useMemo(() => {
-    const first = (schedule?.calendarEvents || [])
-      .map(ev => toDateKey(ev.date))
-      .filter(Boolean)
-      .sort()[0];
-    return first ? new Date(`${first}T00:00:00`) : new Date();
-  }, [schedule]);
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [openDates, setOpenDates] = useState({});
 
-  const [currentDate, setCurrentDate] = useState(firstEventDate);
+  const toggleDate = (date) => {
+    setOpenDates(prev => ({ ...prev, [date]: !prev[date] }));
+  };
 
-  useEffect(() => {
-    setCurrentDate(firstEventDate);
-  }, [firstEventDate]);
-
-  const events = Array.isArray(schedule?.calendarEvents) ? schedule.calendarEvents : [];
+  const events = (Array.isArray(schedule?.calendarEvents) ? schedule.calendarEvents : [])
+    .filter(ev => ev.eventType !== 'ANNOUNCEMENT_DATE');
   const eventsByDate = useMemo(() => {
     return events.reduce((acc, event) => {
       const key = toDateKey(event.date);
@@ -209,9 +235,7 @@ function CalendarView({ schedule, loading }) {
 
   const sortedDateGroups = useMemo(() => Object.entries(eventsByDate).sort(([a], [b]) => a.localeCompare(b)), [eventsByDate]);
 
-  if (loading) {
-    return <div style={S.loadingBox}>캘린더를 불러오는 중...</div>;
-  }
+  if (loading) return <LoadingSpinner />;
 
   if (!schedule || events.length === 0) {
     return (
@@ -302,23 +326,46 @@ function CalendarView({ schedule, loading }) {
       </div>
 
       <div style={S.eventList}>
-        {sortedDateGroups.map(([date, dateEvents]) => (
-          <div key={date} style={S.eventDateGroup}>
-            <div style={S.eventDate}>{fmtDate(date)}</div>
-            <div style={S.eventItems}>
-              {dateEvents.map((event, index) => {
-                const meta = getEventMeta(event.eventType);
-                return (
-                  <div key={`${date}-${event.eventType}-${index}`} style={S.eventItem(event.priority === 'HIGH')}>
-                    <span style={S.eventType(meta)}>{meta.label}</span>
-                    <span style={S.eventTitle}>{event.title}</span>
-                    {event.priority === 'HIGH' && <span style={S.highBadge}>중요</span>}
-                  </div>
-                );
-              })}
+        {sortedDateGroups.map(([date, dateEvents]) => {
+          const isOpen = !!openDates[date];
+          const hasHigh = dateEvents.some(e => e.priority === 'HIGH');
+          return (
+            <div key={date} style={S.accordionItem}>
+              <button
+                type="button"
+                style={S.accordionHeader(isOpen)}
+                onClick={() => toggleDate(date)}
+              >
+                <div style={S.accordionLeft}>
+                  {hasHigh && <span style={S.accordionDot} />}
+                  <span style={S.eventDate}>{fmtDate(date)}</span>
+                  <span style={S.accordionCount}>{dateEvents.length}개</span>
+                </div>
+                <svg
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  width="16" height="16"
+                  style={{ transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: '#6a6a6a', flexShrink: 0 }}
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {isOpen && (
+                <div style={S.accordionBody}>
+                  {dateEvents.map((event, index) => {
+                    const meta = getEventMeta(event.eventType);
+                    return (
+                      <div key={`${date}-${event.eventType}-${index}`} style={S.eventItem(event.priority === 'HIGH')}>
+                        <span style={S.eventType(meta)}>{meta.label}</span>
+                        <span style={S.eventTitle}>{event.title}</span>
+                        {event.priority === 'HIGH' && <span style={S.highBadge}>중요</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -345,6 +392,7 @@ export default function FavoritesPage() {
   const [schedule, setSchedule] = useState(null);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleLoaded, setScheduleLoaded] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(null);
 
   const api = useApi();
   const navigate = useNavigate();
@@ -497,15 +545,14 @@ export default function FavoritesPage() {
 
       {view === 'schedule' && (
         <>
-          <SummaryBadges summary={schedule?.summary} />
-          <ScheduleView schedule={schedule} loading={scheduleLoading} onOpenAnnouncement={openAnnouncement} />
+          <SummaryBadges summary={schedule?.summary} activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+          <ScheduleView schedule={schedule} loading={scheduleLoading} onOpenAnnouncement={openAnnouncement} activeFilter={activeFilter} onClearFilter={() => setActiveFilter(null)} />
           <Disclaimer text={schedule?.disclaimer} />
         </>
       )}
 
       {view === 'calendar' && (
         <>
-          <SummaryBadges summary={schedule?.summary} />
           <CalendarView schedule={schedule} loading={scheduleLoading} />
           <Disclaimer text={schedule?.disclaimer} />
         </>
@@ -558,15 +605,21 @@ const S = {
     whiteSpace: 'nowrap',
   },
   summaryGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 },
-  summaryCard: (urgent) => ({
+  summaryCard: (urgent, active, activeColor) => ({
     padding: '14px 16px',
     borderRadius: 14,
-    background: urgent ? '#fff0f3' : '#f7f7f7',
-    border: urgent ? '1px solid #ffd0d9' : '1px solid rgba(0,0,0,0.04)',
+    background: active ? (activeColor || '#222') : urgent ? '#fff0f3' : '#f7f7f7',
+    border: active ? `2px solid ${activeColor || '#222'}` : urgent ? '1px solid #ffd0d9' : '1px solid rgba(0,0,0,0.04)',
+    outline: 'none',
     minHeight: 80,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'background 0.15s, transform 0.1s, box-shadow 0.15s',
+    transform: active ? 'translateY(-2px)' : 'none',
+    boxShadow: active ? `0 4px 12px ${activeColor}44` : 'none',
   }),
   summaryLabel: { fontSize: 12, fontWeight: 700, color: '#6a6a6a' },
   summaryValue: { fontSize: 24, fontWeight: 800, lineHeight: 1 },
@@ -596,13 +649,15 @@ const S = {
   scheduleCard: (meta, closed) => ({
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 16,
     padding: '18px 20px',
     borderRadius: 16,
-    border: `1px solid ${meta.bg}`,
+    border: '1px solid rgba(0,0,0,0.06)',
+    borderLeft: `4px solid ${meta.color}`,
     background: closed ? '#fafafa' : '#fff',
     opacity: closed ? 0.72 : 1,
+    transition: 'box-shadow 0.15s, transform 0.15s',
   }),
   scheduleMain: { minWidth: 0, flex: 1 },
   badgeRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
@@ -643,6 +698,7 @@ const S = {
     fontWeight: 800,
     cursor: 'pointer',
     whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   calendarNav: { display: 'flex', alignItems: 'center', gap: 8 },
   iconBtn: {
@@ -658,10 +714,10 @@ const S = {
     cursor: 'pointer',
   },
   monthText: { minWidth: 96, textAlign: 'center', fontSize: 15, color: '#222' },
-  calendarShell: { border: '1px solid rgba(0,0,0,0.06)', borderRadius: 16, overflow: 'hidden' },
-  weekHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: '#f7f7f7' },
+  calendarShell: { border: '1px solid rgba(0,0,0,0.06)', borderRadius: 16, overflow: 'auto' },
+  weekHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: '#f7f7f7', minWidth: 560 },
   weekDay: { textAlign: 'center', padding: '10px 0', fontSize: 12, fontWeight: 800 },
-  calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' },
+  calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', minWidth: 560 },
   calendarCellBlank: { minHeight: 110, borderTop: '1px solid rgba(0,0,0,0.05)', borderRight: '1px solid rgba(0,0,0,0.05)' },
   calendarCell: (today) => ({
     minHeight: 110,
@@ -688,15 +744,25 @@ const S = {
     lineHeight: 1.25,
   }),
   moreEvents: { fontSize: 10, fontWeight: 800, color: '#6a6a6a', paddingLeft: 2 },
-  eventList: { marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 },
-  eventDateGroup: {
-    display: 'grid',
-    gridTemplateColumns: '112px 1fr',
-    gap: 12,
-    padding: '12px 0',
-    borderBottom: '1px solid rgba(0,0,0,0.06)',
-  },
-  eventDate: { fontSize: 13, color: '#222', fontWeight: 800, paddingTop: 3 },
+  eventList: { marginTop: 18, display: 'flex', flexDirection: 'column', gap: 6 },
+  accordionItem: { borderRadius: 12, border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden' },
+  accordionHeader: (open) => ({
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 16px',
+    background: open ? '#f7f7f7' : '#fff',
+    border: 'none',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'background 0.15s',
+  }),
+  accordionLeft: { display: 'flex', alignItems: 'center', gap: 8 },
+  accordionDot: { width: 7, height: 7, borderRadius: '50%', background: '#ff385c', flexShrink: 0 },
+  accordionCount: { fontSize: 12, color: '#6a6a6a', fontWeight: 600 },
+  accordionBody: { padding: '8px 16px 12px', display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid rgba(0,0,0,0.06)' },
+  eventDate: { fontSize: 13, color: '#222', fontWeight: 800 },
   eventItems: { display: 'flex', flexDirection: 'column', gap: 6 },
   eventItem: (high) => ({
     display: 'flex',
